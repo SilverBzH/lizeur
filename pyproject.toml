@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lizeur"
+authors = [{name = "Charlie Boutier", email = "charlie.boutier7@gmail.com"}]
 version = "0.1.0"
 description = "Lizeur is a MCP server to be able to get content from PDFs."
 readme = "README.md"
@@ -12,7 +13,7 @@ dependencies = [
     "mcp[cli]>=1.12.4",
     "mistralai>=0.0.10",
 ]
-classifiers = ["Private :: Do Not Upload"]
+urls = {Homepage = "https://github.com/SilverBzH/lizeur"}
 
 [project.scripts]
 lizeur = "main:main"

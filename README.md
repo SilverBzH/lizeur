@@ -17,18 +17,25 @@ Lizeur is a Model Context Protocol (MCP) server that enables AI assistants to ex
 
 ## Installation
 
-### 1. Clone the Repository
+### From pypi
+```
+pip install lizeur
+```
+
+### Manual
+
+#### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd lizeur
 ```
 
-### 2. Create and Activate Virtual Environment
+#### 2. Create and Activate Virtual Environment
 
 ```bash
 # Create a virtual environment
-uv venv
+uv venv --python 3.10
 
 # Activate the virtual environment
 # On macOS/Linux:
@@ -38,7 +45,7 @@ source .venv/bin/activate
 # .venv\Scripts\activate
 ```
 
-### 3. Install Dependencies and Build
+#### 3. Install Dependencies and Build
 
 ```bash
 # Install dependencies
@@ -48,7 +55,7 @@ uv sync
 uv build
 ```
 
-### 4. Install System-Wide
+#### 4. Install System-Wide
 
 ```bash
 # Install the package system-wide
