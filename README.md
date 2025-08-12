@@ -27,7 +27,7 @@ pip install lizeur
 #### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/SilverBzH/lizeur
 cd lizeur
 ```
 
@@ -130,7 +130,7 @@ python main.py
 
 ## License
 
-This project is marked as private and should not be uploaded to public package repositories.
+This project is licensed under the MIT License.
 
 ## Support
 
