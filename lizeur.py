@@ -1,13 +1,14 @@
-import base64
+import json
+import os
 from pathlib import Path
-from typing import Any
+from typing import Any, List
 import httpx
 from mcp.server.fastmcp import FastMCP
 from mistralai import Mistral, OCRResponse
 from dotenv import dotenv_values
 import logging
 
-config = dotenv_values("$HOME/.lizeur.env")
+config = dotenv_values(Path.home() / ".lizeur.env")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,52 +19,95 @@ mcp = FastMCP("lizeur")
 
 class Lizeur:
     def __init__(self):
-        if config["MISTRAL_API_KEY"] is None:
+        if config.get("MISTRAL_API_KEY") is None:
             raise ValueError("MISTRAL_API_KEY is not set")
         self.mistral = Mistral(api_key=config["MISTRAL_API_KEY"])
         self.cache_path = (
-            Path("$HOME/.cache/lizeur")
-            if config["CACHE_PATH"] is None
+            Path.home() / ".cache/lizeur"
+            if config.get("CACHE_PATH") is None
             else Path(config["CACHE_PATH"])
         )
         self.cache_path.mkdir(parents=True, exist_ok=True)
-        # TODO: Add cache for OCR'ed documents
+        # Representing a list of OCR'ed documents. The value being the name of the document situated in the cache_path.
+        self.cached_documents: List[str] = [
+            file.name for file in self.cache_path.iterdir() if file.is_file()
+        ]
 
-    def _read_document(self, path: Path) -> OCRResponse | None:
-        base64_image = self._encode_pdf(path)
-        if base64_image is None:
+    def read_document(self, path: Path) -> OCRResponse | None:
+        """Read a document and return the OCRResponse."""
+        logging.info(f"read_document: Reading document {path.name}")
+        # Check if the document is already cached
+        cached_document_path = self.cache_path / path.name
+        if cached_document_path.exists():
+            logging.info(f"read_document: Document {path.name} is already cached.")
+            try:
+                with open(cached_document_path, "r") as f:
+                    cached_json = f.read()
+                    # Parse JSON and reconstruct OCRResponse
+                    cached_data = json.loads(cached_json)
+                    return OCRResponse.model_validate(cached_data)
+            except (json.JSONDecodeError, ValueError) as e:
+                logging.warning(f"Failed to load cached document {path.name}: {e}")
+                # Remove corrupted cache file
+                cached_document_path.unlink(missing_ok=True)
+
+        # OCR the document
+        ocr_response = self._ocr_document(path)
+        if ocr_response is None:
             return None
-        ocr_response = self.mistral.ocr.process(
-            model="mistral-ocr-latest",
-            document={
-                "type": "document_url",
-                "document_url": f"data:application/pdf;base64,{base64_image}",
-            },
-            include_image_base64=True,
-        )
+
+        # Cache the document using model_dump_json() for direct JSON serialization
+        try:
+            with open(cached_document_path, "w") as f:
+                f.write(ocr_response.model_dump_json(indent=2))
+            logging.info(f"Successfully cached document {path.name}")
+        except Exception as e:
+            logging.error(f"Failed to cache document {path.name}: {e}")
 
         return ocr_response
 
-    def _encode_pdf(self, pdf_path: Path) -> str | None:
-        """Encode the pdf to base64."""
+    def _ocr_document(self, path: Path) -> OCRResponse | None:
+        """OCR a document and return the OCRResponse."""
         try:
-            with open(pdf_path, "rb") as pdf_file:
-                header = pdf_file.read(4)
-                if header != b"%PDF":
-                    logger.error(f"encode_pdf: The file {pdf_path} is not a valid PDF file.")
-                    return None
-                pdf_file.seek(0)
+            # Upload the file to MistralAI
+            uploaded_file = self.mistral.files.upload(
+                file={
+                    "file_name": path.stem,
+                    "content": path.read_bytes(),
+                },
+                purpose="ocr",
+            )
 
-                return base64.b64encode(pdf_file.read()).decode("utf-8")
-        except FileNotFoundError:
-            logger.error(f"encode_pdf: The file {pdf_path} was not found.")
-            return None
+            # Process the uploaded file with OCR
+            ocr_response = self.mistral.ocr.process(
+                document={
+                    "type": "file",
+                    "file_id": uploaded_file.id,
+                },
+                model="mistral-ocr-latest",
+                include_image_base64=True,
+            )
+
+            # Clean up the uploaded file
+            try:
+                self.mistral.files.delete(uploaded_file.id)
+            except Exception as e:
+                logging.warning(
+                    f"Failed to delete uploaded file {uploaded_file.id}: {e}"
+                )
+
+            return ocr_response
+
         except Exception as e:
-            logger.error(f"encode_pdf: {e}", exc_info=True)
+            logging.error(f"OCR processing failed for {path}: {e}")
             return None
 
 
-@mcp.tool()
-async def read_pdf(pdf_path: str) -> str:
-    """Read a PDF file and return the text content."""
-    return ""
+def main():
+    lizeur = Lizeur()
+    resp = lizeur.read_document(Path("test.pdf"))
+    print(resp.pages[0].markdown)
+
+
+if __name__ == "__main__":
+    main()
