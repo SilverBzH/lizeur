@@ -101,8 +101,48 @@ class Lizeur:
 
 
 @mcp.tool()
-def read_pdf(absolute_path: str) -> str:
-    return Lizeur().read_document(Path(absolute_path)).pages[0].markdown
+def read_pdf(absolute_path: str) -> dict:
+    """Read a PDF document and return the complete OCRResponse as a dictionary.
+
+    Returns the full OCR response including all pages, not just the first page.
+    The response includes pages with markdown content, bounding boxes, and other OCR metadata.
+    """
+    ocr_response = Lizeur().read_document(Path(absolute_path))
+    if ocr_response is None:
+        return {"error": "Failed to process document"}
+
+    response_data = ocr_response.model_dump()
+    return {
+        "status": "success",
+        "document_path": absolute_path,
+        "total_pages": len(response_data.get("pages", [])),
+        "pages": response_data.get("pages", []),
+        "metadata": {
+            k: v
+            for k, v in response_data.items()
+            if k != "pages" and k != "model_dump_json"
+        },
+    }
+
+
+@mcp.tool()
+def read_pdf_text(absolute_path: str) -> str:
+    """Read a PDF document and return only the markdown text content from all pages.
+
+    This is a simpler alternative to read_pdf that returns just the text content
+    without the full OCR metadata, which can be easier for agents to process.
+    """
+    ocr_response = Lizeur().read_document(Path(absolute_path))
+    if ocr_response is None:
+        return "Error: Failed to process document"
+
+    # Combine all pages' markdown content
+    all_text = []
+    for i, page in enumerate(ocr_response.pages):
+        if hasattr(page, "markdown") and page.markdown:
+            all_text.append(f"--- Page {i+1} ---\n{page.markdown}")
+
+    return "\n\n".join(all_text) if all_text else "No text content found"
 
 
 def main():
