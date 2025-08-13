@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lizeur"
 authors = [{name = "Charlie Boutier", email = "charlie.boutier7@gmail.com"}]
-version = "0.1.2"
+version = "0.1.3"
 description = "Lizeur is a MCP server to be able to get content from PDFs."
 readme = "README.md"
 requires-python = ">=3.10"

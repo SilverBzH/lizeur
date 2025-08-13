@@ -22,6 +22,26 @@ Lizeur is a Model Context Protocol (MCP) server that enables AI assistants to ex
 pip install lizeur
 ```
 
+And add the following configuration to your `mcp.json` file:
+
+**Note:** Lizeur will be installed in the python3.10 folder. If this folder is not in your system PATH, your IDE may not be able to detect the lizeur binary.
+
+**Solution:** You can add the full path to the lizeur binary in the command field to ensure your IDE can locate it.
+
+```json
+{
+  "mcpServers": {
+    "lizeur": {
+      "command": "lizeur",
+      "env": {
+        "MISTRAL_API_KEY": "your-mistral-api-key-here",
+        "CACHE_PATH": "your cache path",
+      }
+    }
+  }
+}
+```
+
 ### Manual
 
 #### 1. Clone the Repository
@@ -64,38 +84,28 @@ uv pip install --system .
 
 This will install the `lizeur` command globally on your system.
 
-## MCP Configuration
-
-Add the following configuration to your `mcp.json` file:
-
-```json
-{
-  "mcpServers": {
-    "lizeur": {
-      "command": "lizeur",
-      "env": {
-        "MISTRAL_API_KEY": "your-mistral-api-key-here",
-        "CACHE_PATH": "your cache path",
-      }
-    }
-  }
-}
-```
-
 ## Usage
 
-Once configured, the MCP server provides a `read_pdf` tool that can be used by AI assistants:
+Once configured, the MCP server provides two tools that can be used by AI assistants:
 
+### Available Functions
+
+#### `read_pdf`
 - **Function**: `read_pdf`
 - **Parameter**: `absolute_path` (string) - The absolute path to the PDF file
-- **Returns**: Markdown text extracted from the first page of the PDF
+- **Returns**: Complete OCR response including all pages with markdown content, bounding boxes, and other OCR metadata
+
+#### `read_pdf_text`
+- **Function**: `read_pdf_text`
+- **Parameter**: `absolute_path` (string) - The absolute path to the PDF file
+- **Returns**: Markdown text content from all pages without the full OCR metadata (simpler for agents to process)
 
 ### Example Usage in AI Assistant
 
-The AI assistant can now use the tool like this:
+The AI assistant can now use the tools like this:
 
 ```
-What the OP code looks like for this specific controller, here is the doc /path/to/document.pdf
+What the OP command looks like for this specific controller, here is the doc /path/to/document.pdf
 ```
 
 The MCP server will:
@@ -104,6 +114,8 @@ The MCP server will:
 3. Extract the text and convert it to markdown
 4. Cache the result for future use
 5. Return the markdown content
+
+**Note**: Use `read_pdf_text` when you only need the text content, or `read_pdf` when you need the complete OCR response with metadata. `read_pdf` can be confusion for some agent if the pdf file is big.
 
 ## Development
 
