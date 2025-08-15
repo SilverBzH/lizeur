@@ -2,6 +2,10 @@
 
 Lizeur is a Model Context Protocol (MCP) server that enables AI assistants to extract and read content from PDF documents using Mistral AI's OCR capabilities. It provides a simple interface for converting PDF files to markdown text that can be easily consumed by AI models.
 
+<a href="https://glama.ai/mcp/servers/@SilverBzH/lizeur">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@SilverBzH/lizeur/badge" alt="Lizeur MCP server" />
+</a>
+
 ## Features
 
 - **PDF OCR Processing**: Uses Mistral AI's latest OCR model to extract text from PDF documents
